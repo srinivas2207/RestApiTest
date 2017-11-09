@@ -11,6 +11,7 @@ public class ApiTestConstants {
 	public static final String PROPERTY_POLL				= "API_POLL";
 	public static final String PROPERTY_REQUEST				= "API_REQUEST";
 	public static final String PROPERTY_RESPONSE			= "API_RESPONSE";
+	public static final String PROPERTY_HEADERS				= "API_HEADERS";
 	public static final String PROPERTY_TEST_CONDITION		= "TEST_CONDITION";
 	public static final String PROPERTY_TEST_TYPE			= "TEST_TYPE";
 	public static final String PROPERTY_SUITE_VARS			= "SUITE_VARS";

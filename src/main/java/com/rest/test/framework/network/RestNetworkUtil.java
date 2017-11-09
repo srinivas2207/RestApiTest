@@ -13,9 +13,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+
+
+
+
+import javax.ws.rs.HttpMethod;
 
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 import com.rest.test.framework.util.ApiTestConstants;
@@ -47,7 +53,8 @@ public class RestNetworkUtil {
 	}
 	
 	public Map getHeaders() {
-		return headers;
+		HashMap clonedHeaders = (HashMap) ((HashMap) headers).clone();
+		return clonedHeaders;
 	}
 	
 	public String getBaseUrl() {
@@ -79,8 +86,16 @@ public class RestNetworkUtil {
 	public void sendRequest(ApiCallInfo apiCallInfo) throws Exception {
 		RestCallResponse restCallResponse = null;
 		Map<String, String> headers = getHeaders();
+		if (apiCallInfo.getHeaders() != null) {
+			for (Map.Entry<String, String> entry : apiCallInfo.getHeaders().entrySet()) {
+				String key = entry.getKey();
+				String value = entry.getValue();
+				headers.put(key, value);
+			}
+		}
+		
 		String url;
-		if (apiCallInfo.getUrl().startsWith("http://") || apiCallInfo.getUrl().startsWith("https://")) {
+		if (apiCallInfo.getUrl().startsWith("http") || apiCallInfo.getUrl().startsWith("www")) {
 			url = apiCallInfo.getUrl();
 		}
 		else {
@@ -116,7 +131,24 @@ public class RestNetworkUtil {
 	}
 	
 	public RestCallResponse doPost(String reqUrl, String postBody, Map<String, String> headers) throws Exception {
-		RestCallResponse restCallResponse = new RestCallResponse();
+		return sendHttpRequest(HttpMethod.POST, reqUrl, postBody, headers);
+	}
+
+	private RestCallResponse doGet(String reqUrl, Map<String, String> headers) throws Exception{
+		return sendHttpRequest(HttpMethod.GET, reqUrl, null, headers);
+	}
+
+	private RestCallResponse doPut(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
+		return sendHttpRequest(HttpMethod.PUT, reqUrl, postBody, headers);
+	}
+	
+	private RestCallResponse doDelete(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
+		return sendHttpRequest(HttpMethod.DELETE, reqUrl, postBody, headers);
+	}
+	
+	private RestCallResponse sendHttpRequest(String httpMethod, String reqUrl, String body, Map<String, String> headers) throws Exception {
+		reqUrl = reqUrl.replaceAll(" ", "%20");
+		RestCallResponse restCallResponse = null;
 		InputStream is = null;
 		String result = null;
 		HttpURLConnection conn = null;
@@ -127,15 +159,11 @@ public class RestNetworkUtil {
 			} catch (MalformedURLException e) {
 				throw new IllegalArgumentException("Invalid url: " + reqUrl);
 			}
-		
-			byte[] bytes = postBody.getBytes();
+			
 			try {
 				conn = (HttpURLConnection) url.openConnection();
-				//conn.setConnectTimeout(10000);
-				conn.setDoOutput(true);
 				conn.setUseCaches(false);
-				conn.setFixedLengthStreamingMode(bytes.length);
-				conn.setRequestMethod("POST");
+				conn.setRequestMethod(httpMethod);
 				conn.setRequestProperty("Content-Type", "application/json; charset=utf8");
 				
 				// adding header params
@@ -147,11 +175,31 @@ public class RestNetworkUtil {
 					}
 				}
 				
-				// post the request
-				OutputStream out = conn.getOutputStream();
-				out.write(bytes);
-				out.close();
+				byte[] bytes = null;
+				if (body != null) {
+					bytes = body.getBytes();
+					conn.setFixedLengthStreamingMode(bytes.length);
+				}
 				
+				if (httpMethod.equals(HttpMethod.POST)) {
+					conn.setDoOutput(true);
+				}
+				else if (httpMethod.equals(HttpMethod.GET)) {
+
+				}
+				else if (httpMethod.equals(HttpMethod.PUT)) {
+					conn.setDoOutput(true);
+				}
+				else if (httpMethod.equals(HttpMethod.DELETE)) {
+					
+				}
+								
+				if (body != null) {
+					OutputStream out = conn.getOutputStream();
+					out.write(bytes);
+					out.close();
+				}
+			
 				int responseCode = conn.getResponseCode();
 				if (responseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
 				    is = conn.getInputStream();
@@ -164,8 +212,22 @@ public class RestNetworkUtil {
 					result = readStream(is);
 				}
 				
+				restCallResponse = new RestCallResponse();
 				restCallResponse.setStatus(responseCode);
 				restCallResponse.setResponse(result);
+				
+				Map<String, List<String>> map = conn.getHeaderFields();
+				Map<String, String> responseHeaders = null;
+				if (map != null) {
+					responseHeaders = new HashMap<>();
+					for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+						String key = entry.getKey();
+						String value = conn.getHeaderField(entry.getKey());
+						responseHeaders.put(key, value);
+					}
+				}
+				restCallResponse.setHeaders(responseHeaders);
+				
 			} catch(Exception e) {
 				throw e;
 			} finally {
@@ -184,145 +246,6 @@ public class RestNetworkUtil {
 		}
 
 		return restCallResponse;
-	}
-
-	
-	private RestCallResponse doGet(String reqUrl, Map<String, String> headers) throws Exception{
-		//Escaping spaces in URL
-		reqUrl=reqUrl.replaceAll(" ","%20");
-		HttpURLConnection con = null;
-
-		try {
-			URL obj = new URL(reqUrl);
-			con = (HttpURLConnection) obj.openConnection();
-			con.setRequestMethod("GET");
-			
-			// adding header params
-			if (headers != null) {
-				Iterator<Entry<String, String>> iterator = headers.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<String, String> header = iterator.next();
-					con.setRequestProperty(header.getKey(), header.getValue());
-				}
-			}
-			
-			InputStream is = null;
-			int responseCode = con.getResponseCode();
-			if (responseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
-			    is = con.getInputStream();
-			} else {
-				is = con.getErrorStream();
-			}
-			
-			String result = null;
-			// Convert the InputStream into a string
-			if (is != null) {
-				result = readStream(is);
-			}
-			
-			RestCallResponse restCallResponse = new RestCallResponse();
-			restCallResponse.setStatus(responseCode);
-			restCallResponse.setResponse(result);
-			return restCallResponse;
-		} finally {
-			closeConnection(con);
-		}
-		
-	}
-
-	private RestCallResponse doPut(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
-		//Escaping spaces in URL
-		reqUrl=reqUrl.replaceAll(" ","%20");
-		HttpURLConnection con = null;
-		try {
-			URL obj = new URL(reqUrl);
-			con = (HttpURLConnection) obj.openConnection();
-			con.setDoOutput(true);
-			con.setRequestMethod("PUT");
-
-			byte[] bytes = postBody.getBytes();
-			con.setFixedLengthStreamingMode(bytes.length);
-
-			
-			// adding header params
-			if (headers != null) {
-				Iterator<Entry<String, String>> iterator = headers.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<String, String> header = iterator.next();
-					con.setRequestProperty(header.getKey(), header.getValue());
-				}
-			}
-
-			OutputStream out = con.getOutputStream();
-			out.write(bytes);
-			out.close();
-			
-			int responseCode = con.getResponseCode();
-			
-			InputStream is = null;
-			if (responseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
-			    is = con.getInputStream();
-			} else {
-				is = con.getErrorStream();
-			}
-			
-			String result = null;
-			// Convert the InputStream into a string
-			if (is != null) {
-				result = readStream(is);
-			}
-			
-			RestCallResponse restCallResponse = new RestCallResponse();
-			restCallResponse.setStatus(responseCode);
-			restCallResponse.setResponse(result);
-			return restCallResponse;
-		} finally {
-			closeConnection(con);
-		}
-	}
-	
-	private RestCallResponse doDelete(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
-		//Escaping spaces in URL
-		reqUrl=reqUrl.replaceAll(" ","%20");
-		
-		URL obj = new URL(reqUrl);
-		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-		try {
-			con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			con.setRequestMethod("DELETE");
-			
-			// adding header params
-			if (headers != null) {
-				Iterator<Entry<String, String>> iterator = headers.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<String, String> header = iterator.next();
-					con.setRequestProperty(header.getKey(), header.getValue());
-				}
-			}
-		    
-			int responseCode = con.getResponseCode();
-			
-			InputStream is = null;
-			if (responseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
-			    is = con.getInputStream();
-			} else {
-				is = con.getErrorStream();
-			}
-			
-			String result = null;
-			// Convert the InputStream into a string
-			if (is != null) {
-				result = readStream(is);
-			}
-			
-			RestCallResponse restCallResponse = new RestCallResponse();
-			restCallResponse.setStatus(responseCode);
-			restCallResponse.setResponse(result);
-			return restCallResponse;
-			
-		}  finally {
-			closeConnection(con);
-		} 
 	}
 	
 	
@@ -386,6 +309,8 @@ public class RestNetworkUtil {
 	public static class RestCallResponse {
 		private int status;
 		private String response;
+		private Map<String , String> headers;
+		
 		public int getStatus()
 		{
 			return status;
@@ -402,6 +327,12 @@ public class RestNetworkUtil {
 		{
 			this.response = response;
 		}
+		public void setHeaders(Map headers) {
+			this.headers = headers;
+		}
 		
+		public Map getHeaders() {
+			return this.headers;
+		}
 	}
 }

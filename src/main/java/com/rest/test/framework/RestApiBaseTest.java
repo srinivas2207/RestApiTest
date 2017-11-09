@@ -135,7 +135,7 @@ public abstract class RestApiBaseTest {
 			if (isPerformanceTrackOn) {
 				performanceTracker.setRequestStatus(apiCallInfo.getId(), true);
 			}
-		} catch(Exception e) {
+		} catch(Exception  | AssertionError e) {
 			String assertionMessage =  "Exceptions while testing request:\n";
 			
 			StringWriter errors = new StringWriter();

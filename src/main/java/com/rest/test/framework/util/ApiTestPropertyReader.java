@@ -119,6 +119,11 @@ public class ApiTestPropertyReader extends Properties
 				int pollInterval = Integer.parseInt(str);
 				apiCallInfo.setPollInterval(pollInterval);
 			}
+			else if (property.startsWith(ApiTestConstants.PROPERTY_HEADERS)) {
+				String headersStr = getPropertyValue(property);
+				apiCallInfo.setHeaders(headersStr);
+			}
+			
 		}
 
 		return apiTestInfo;

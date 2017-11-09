@@ -75,6 +75,7 @@ public class ApiTestInfo {
 		private String response = null;
 		private List<VariableInfo> testVariableList = new ArrayList<VariableInfo>();
 		private List<VariableInfo> variableList = new ArrayList<VariableInfo>();
+		private Map<String, String> headers;
 		private String testCondition;
 		private boolean poll = false;
 		private String testType = null;
@@ -270,6 +271,30 @@ public class ApiTestInfo {
 		public void setWaitTime(int waitTime)
 		{
 			this.waitTime = waitTime;
+		}
+
+		public Map<String, String> getHeaders()
+		{
+			return headers;
+		}
+
+		public void setHeaders(String headerInfo)
+		{
+			if (headerInfo != null && headerInfo.trim().length() > 0) {
+				JSONArray headerList = new JSONArray(headerInfo);
+				if (headerList != null && headerList.length() > 0) {
+					for (int i = 0; i < headerList.length(); i++) {
+						String str = headerList.getString(i);
+						String headerKey = headerList.getString(i).substring(0, str.indexOf("="));
+						String headerValue = headerList.getString(i).substring(str.indexOf("=") + 1, str.length());
+						
+						if (headers == null) {
+							headers = new HashMap<>();
+						}
+						headers.put(headerKey, headerValue);
+					}
+				}
+			}
 		}
 
 	}
