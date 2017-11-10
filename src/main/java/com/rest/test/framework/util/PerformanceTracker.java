@@ -14,6 +14,12 @@ import java.util.Scanner;
 import com.rest.test.framework.ApiTestInfo;
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 
+/**
+ * This class tracks the time taken by each network call. <br>
+ * Generates a CSV  for each test class.
+ * @author SrinivasDonapati
+ *
+ */
 public class PerformanceTracker
 {
 	private static final String COMMA_DELIMITER = ",";

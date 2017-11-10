@@ -20,6 +20,11 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 
+/**
+ * Utility class to handle data
+ * @author SrinivasDonapati
+ *
+ */
 @SuppressWarnings("restriction")
 public class DataUtil
 {
@@ -27,6 +32,12 @@ public class DataUtil
 	private static final String XPATH_PREFIX = "XPATH:";
 	private static final String JSON_PATH_PREFIX = "$";
 	
+	/**
+	 * Parsing XML and fetching value for the XPath
+	 * @param xPath
+	 * @param xml
+	 * @return
+	 */
 	public static String getXpathValue(String xPath, String xml) {
 
 		if (xPath.startsWith(XPATH_PREFIX)) {
@@ -54,6 +65,11 @@ public class DataUtil
 		return xpathVal;
 	}
 	
+	/**
+	 * Checks if the passed data is XML or not
+	 * @param data
+	 * @return
+	 */
 	public static boolean isXMLData(String data) {
 		if (data != null) {
 			data = data.trim();
@@ -64,12 +80,22 @@ public class DataUtil
 		return false;
 	}
 	
+	/**
+	 * Checks if the passed data is JSON or not
+	 * @param data
+	 * @return
+	 */
 	public static boolean isJsonData(String data)
 	{
 		if ((data.startsWith("{") && data.endsWith("}")) || (data.startsWith("[") && data.endsWith("]"))) { return true; }
 		return false;
 	}
 	
+	/**
+	 * Configuring JSON Path
+	 * @param json
+	 * @return
+	 */
 	private static Object configJsonPath (String json) {
 		Object jsonDoc = null;
 		try {
@@ -81,6 +107,12 @@ public class DataUtil
 		return jsonDoc;
 	}
 	
+	/**
+	 * Parsing JSON data and fetching the value for the passed JSON Path
+	 * @param jsonPath
+	 * @param jsonData
+	 * @return
+	 */
 	public static Object getJsonPathValue(String jsonPath, String jsonData) {
 		Object jsonDoc = configJsonPath(jsonData);		
 		try {
@@ -96,7 +128,11 @@ public class DataUtil
 		}
 	}
 	
-	
+	/**
+	 * Returns the type of the data
+	 * @param value
+	 * @return
+	 */
 	public static VARIABLE_VALUE_TYPE getVariableValueType(String value) {
 		if (value.startsWith(JSON_PATH_PREFIX)) {
 			return VARIABLE_VALUE_TYPE.JSON_PATH;

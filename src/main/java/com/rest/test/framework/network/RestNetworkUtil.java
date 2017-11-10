@@ -27,7 +27,9 @@ import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 import com.rest.test.framework.util.ApiTestConstants;
 
 /**
- * This class handles network operations
+ * Network utility class used for all the HTTP operations
+ * <br>
+ * Each test suite uses a different instance of this class, and works differently based on configuration.
  * @author SrinivasDonapati
  *
  */
@@ -36,31 +38,61 @@ public class RestNetworkUtil {
 	
 	private Map<String, String> headers = new HashMap<>();
 	
+	/**
+	 * Adding new header to the list
+	 * @param key
+	 * @param value
+	 */
 	public void addHeader(String key, String value) {
 		headers.put(key, value);
 	}
 	
+	/**
+	 * Removing header from the list
+	 * @param key
+	 */
 	public void removeHeader(String key) {
 		headers.remove(key);
 	}
 	
+	/**
+	 * Returns the header value
+	 * @param key Header name
+	 * @return Header value
+	 */
 	public String getHeader(String key) {
 		return headers.get(key);
 	}
 	
+	/**
+	 * Resetting headers by replacing old headers
+	 * @param headers
+	 */
 	public void setHeaders(Map<String, String> headers) {
 		this.headers = headers;
 	}
 	
+	/**
+	 * Returns a cloned copy of the headers
+	 * @return
+	 */
 	public Map getHeaders() {
 		HashMap clonedHeaders = (HashMap) ((HashMap) headers).clone();
 		return clonedHeaders;
 	}
 	
+	/**
+	 * Returns the base url
+	 * @return
+	 */
 	public String getBaseUrl() {
 		return restBaseUrl;
 	}
 
+	/**
+	 * Setting base url
+	 * @param baseUrl
+	 */
 	public void setBaseUrl(String baseUrl) {
 		
 		if(baseUrl == null) {
@@ -82,7 +114,11 @@ public class RestNetworkUtil {
 		restBaseUrl = baseUrl;
 	}
 	
-
+	/**
+	 * Building and sending HTTP request using {@link ApiCallInfo}
+	 * @param apiCallInfo 
+	 * @throws Exception
+	 */
 	public void sendRequest(ApiCallInfo apiCallInfo) throws Exception {
 		RestCallResponse restCallResponse = null;
 		Map<String, String> headers = getHeaders();
@@ -130,22 +166,62 @@ public class RestNetworkUtil {
 		apiCallInfo.setRestCallResponse(restCallResponse);
 	}
 	
+	/**
+	 * Sending HTTP POST request
+	 * @param reqUrl
+	 * @param postBody
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
 	public RestCallResponse doPost(String reqUrl, String postBody, Map<String, String> headers) throws Exception {
 		return sendHttpRequest(HttpMethod.POST, reqUrl, postBody, headers);
 	}
 
+	/**
+	 * Sending HTTP GET request
+	 * @param reqUrl
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
 	private RestCallResponse doGet(String reqUrl, Map<String, String> headers) throws Exception{
 		return sendHttpRequest(HttpMethod.GET, reqUrl, null, headers);
 	}
 
+	/**
+	 * Sending HTTP PUT request
+	 * @param reqUrl
+	 * @param postBody
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
 	private RestCallResponse doPut(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
 		return sendHttpRequest(HttpMethod.PUT, reqUrl, postBody, headers);
 	}
 	
+	/**
+	 * Sending HTTP DELETE request
+	 * @param reqUrl
+	 * @param postBody
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
 	private RestCallResponse doDelete(String reqUrl, String postBody, Map<String, String> headers) throws Exception{
 		return sendHttpRequest(HttpMethod.DELETE, reqUrl, postBody, headers);
 	}
 	
+	/**
+	 * Sending HTTP request
+	 * @param httpMethod
+	 * @param reqUrl
+	 * @param body
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
 	private RestCallResponse sendHttpRequest(String httpMethod, String reqUrl, String body, Map<String, String> headers) throws Exception {
 		reqUrl = reqUrl.replaceAll(" ", "%20");
 		RestCallResponse restCallResponse = null;
@@ -260,14 +336,28 @@ public class RestNetworkUtil {
 		}
 	}
 
-	
+	/**
+	 * Handling Uploading requests
+	 * @param url
+	 * @param request
+	 * @param headers
+	 * @return
+	 * @throws Exception
+	 */
  	public RestCallResponse uploadFile(String url, String request, Map<String, String> headers) throws Exception {
  		// Handling Rest Based file uploads
  		RestFileUploader fileUploader = new RestFileUploader(url, request, headers);
 		return fileUploader.upload();
  	}
 	
- 
+ 	/**
+ 	 * Handling downloading requests
+ 	 * @param url
+ 	 * @param request
+ 	 * @param headers
+ 	 * @return
+ 	 * @throws Exception
+ 	 */
 	public RestCallResponse downloadFile(String url, String request, Map<String, String> headers) throws Exception {
 		
 		File resourcesDirectory = new File("src/test/resources");
@@ -305,12 +395,20 @@ public class RestNetworkUtil {
 		return result.trim();
 	}
 	
-	
+	/**
+	 * This class holds the information of HTTP response
+	 * @author SrinivasDonapati
+	 *
+	 */
 	public static class RestCallResponse {
 		private int status;
 		private String response;
 		private Map<String , String> headers;
 		
+		/**
+		 * Returns HTTP status of the response
+		 * @return
+		 */
 		public int getStatus()
 		{
 			return status;
@@ -319,6 +417,11 @@ public class RestNetworkUtil {
 		{
 			this.status = status;
 		}
+		
+		/**
+		 * Returns the reponse of the request
+		 * @return
+		 */
 		public String getResponse()
 		{
 			return response;
@@ -327,10 +430,15 @@ public class RestNetworkUtil {
 		{
 			this.response = response;
 		}
+		
 		public void setHeaders(Map headers) {
 			this.headers = headers;
 		}
 		
+		/**
+		 * Returns all the response headers
+		 * @return
+		 */
 		public Map getHeaders() {
 			return this.headers;
 		}

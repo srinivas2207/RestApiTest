@@ -15,6 +15,14 @@ import org.xmlunit.diff.DifferenceEvaluator;
 import com.rest.test.framework.util.ApiTestConstants;
 
 
+/**
+ * This Utility class is used for comparing two different XML data.
+ *
+ * * <br><br>
+ * Used XmlUnit library <a href="https://github.com/xmlunit/xmlunit">https://github.com/xmlunit/xmlunit</a>
+ * @author SrinivasDonapati
+ *
+ */
 public class RestXmlUnitTest {
 	public String expectedXMLResponse = null;
 	public String actualXMLResponse = null;

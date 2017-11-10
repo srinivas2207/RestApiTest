@@ -1,5 +1,10 @@
 package com.rest.test.framework.util;
 
+/**
+ * This class contains the all the constants used in the framework
+ * @author SrinivasDonapati
+ *
+ */
 public class ApiTestConstants {
 
 	public static final String PROPERTY_TEST_NAME			= "TEST_NAME";

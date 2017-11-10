@@ -53,6 +53,11 @@ public class RestFileUploader {
 		this.url = url;
 	}
 
+	/**
+	 * Initiating HTTP upload
+	 * @return
+	 * @throws Exception
+	 */
 	public RestCallResponse upload() throws Exception {
 		RestCallResponse responseObj = new RestCallResponse();
 		

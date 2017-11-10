@@ -24,9 +24,38 @@ import org.junit.runners.Parameterized.Parameters;
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 import com.rest.test.framework.ApiTestInfo.RunTimeTestInfo;
 import com.rest.test.framework.network.RestNetworkUtil;
-import com.rest.test.framework.util.ApiTestConstants;
 import com.rest.test.framework.util.PerformanceTracker;
 
+/**
+ * This is the base class used for creating test suites. <br>
+ * <br>
+ * Create a sub class and pass test classes info by adding below method <br>
+ * <br>
+ * 
+ * <pre>
+ * 
+ * public static TestSuite suite()
+ * {
+ * 	List&lt;Object&gt; testList = new ArrayList&lt;&gt;();
+ * 
+ * 	testList.add(&quot;Twitter/profile_test.properties&quot;);
+ * 	testList.add(&quot;Twitter/tweet_test.properties&quot;);
+ * 	testList.add(FavouriteTweet.class);
+ * 	testList.add(&quot;Twitter/delete_tweet.properties&quot;);
+ * 
+ * 	init(TwitterTestSuite.class, testList);
+ * 
+ * 	return RestApiBaseTestSuite.suite();
+ * }
+ * </pre>
+ * 
+ * <br>
+ * Override {@code setUpSuite} and {@code tearDownSuite} to track test suite's life cycle <br>
+ * <br>
+ * Call {@code initConfig} to pass the test suite configuration from {@code setUpSuite} method
+ * 
+ * @author SrinivasDonapati
+ */
 @RunWith(AllTests.class)
 public class RestApiBaseTestSuite {
 	private static RestApiBaseTestSuite testSuite = null;
@@ -35,8 +64,7 @@ public class RestApiBaseTestSuite {
 	private RestNetworkUtil restUtil;
 	private List<ApiTestInfo> apiTestList = new ArrayList<>();
 	private Map<String, String> suiteVariableMap = new HashMap<String, String>();
-	private Map<String, String> envVariableMap = new HashMap<>(); 
-
+	
 	private List<Object> testList;
 	private List<String> propertyFileList;
 	
@@ -44,10 +72,12 @@ public class RestApiBaseTestSuite {
 	private int apiTestCount = 0;
 	
 	private RestAuthenticator restAuthenticator;
-	private boolean isPerformanceTrackOn = false;
-	private boolean isPerformanceTrackAppend = false;
-	
 
+	/**
+	 * Initializing the test suite
+	 * @param childSuite Class of the test suite
+	 * @param testList List of tests (property files or custom test classes)
+	 */
 	public static synchronized void init(Class childSuite, List<Object> testList) {
 		// Creating an instance of calling testsuite. This instance is useful
 		// for calling Setup and teardown methods
@@ -67,6 +97,10 @@ public class RestApiBaseTestSuite {
 		}
 	}
 	
+	/**
+	 * Method used by JUNIT to initialize testing
+	 * @return
+	 */
 	public static synchronized TestSuite suite() {
 		if (testSuite == null) {
 			return null;
@@ -101,7 +135,10 @@ public class RestApiBaseTestSuite {
 		return suite;
 	}
 	
-	
+	/**
+	 * Setting test suite configuration
+	 * @param config {@link RestSuiteConfiguration}
+	 */
 	public void initConfig(RestSuiteConfiguration config)
 	{
 		if(config.getBaseUrl() != null) {
@@ -126,7 +163,7 @@ public class RestApiBaseTestSuite {
 	}
 
 	/**
-	 * This inner class is used to run tests, added to test suite as a property file
+	 * This class is used to convert property files into JUNIT tests
 	 */
 	public static class PropertyTester extends RestApiBaseTest {
 		
@@ -143,18 +180,36 @@ public class RestApiBaseTestSuite {
 		}
 	}
 	
+	/**
+	 * Returns the variable value stored in suite
+	 * @param variableName
+	 * @return Variable value
+	 */
 	public String getVariableValue(String variableName) {
 		return suiteVariableMap.get(variableName);
 	}
 
+	/**
+	 * Storing Variable in suite
+	 * @param variableName
+	 * @param variableValue
+	 * @return
+	 */
 	public String setVariableValue(String variableName, String variableValue) {
 		return suiteVariableMap.put(variableName, variableValue);
 	}
 
+	/**
+	 * Returning all the variables
+	 * @return Variable map
+	 */
 	public Map getVariableMap() {
 		return suiteVariableMap;
 	}
 	
+	/**
+	 * Clears all the variables stored
+	 */
 	public void clearVariables() {
 		suiteVariableMap.clear();
 	}
@@ -201,6 +256,7 @@ public class RestApiBaseTestSuite {
 	
 	/**
 	 * Call back before running each test class
+	 * @param apiTestInfo {@link ApiTestInfo}
 	 */
 	public void setUpClass(ApiTestInfo apiTestInfo) {
 		this.apiTestCount++;
@@ -208,6 +264,7 @@ public class RestApiBaseTestSuite {
 
 	/**
 	 * Call back after running each test class
+	 * @param apiTestInfo {@link ApiTestInfo}
 	 */
 	public void tearDownClass(ApiTestInfo apiTestInfo) {
 		if (this.apiTestCount == this.testList.size()) {
@@ -215,18 +272,39 @@ public class RestApiBaseTestSuite {
 		}
 	}
 	
+	/**
+	 * Returns the running test suite
+	 * @param id Test suite id
+	 * @return {@link RestApiBaseTestSuite} instance
+	 */
 	public static RestApiBaseTestSuite getTestSuite(Long id) {
 		return suiteMap.get(id);
 	}
 	
+	/**
+	 * Returns the running test suite
+	 * @param apiTestInfo Test class info
+	 * @return {@link RestApiBaseTestSuite} instance
+	 */
 	public static RestApiBaseTestSuite getTestSuite(ApiTestInfo apiTestInfo) {
 		return suiteMap.get(apiTestInfo.getRunTimeTestInfo().getTestSuiteId());
 	}
 	
+	/**
+	 * Returns the running test suite
+	 * @param apiCallInfo API Call info
+	 * @return {@link RestApiBaseTestSuite} instance
+	 */
 	public static RestApiBaseTestSuite getTestSuite(ApiCallInfo apiCallInfo) {
 		return suiteMap.get(apiCallInfo.getApiTestInfo().getRunTimeTestInfo().getTestSuiteId());
 	}
 	
+	/**
+	 * Adds test suite to the MAP using a unique id<br>
+	 * This is is crucial in identifying running test suite
+	 * @param suite
+	 * @return Test suites's unique Id
+	 */
 	private static Long addTestSuite(RestApiBaseTestSuite suite) {
 		Long id = getRandomId();
 		while(suiteMap.containsKey(id)) {
@@ -251,12 +329,12 @@ public class RestApiBaseTestSuite {
 		return randomNumber;
 	}
 	
+	/**
+	 * Returns assigned rest util for this test suite
+	 * @return {@link RestNetworkUtil}
+	 */
 	public RestNetworkUtil getRestUtil() {
 		return restUtil;
-	}
-	
-	public String getEnvironmentValue(String key) {
-		return envVariableMap.get(key);
 	}
 	
 }

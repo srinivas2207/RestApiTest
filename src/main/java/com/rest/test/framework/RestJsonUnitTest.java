@@ -16,6 +16,14 @@ import org.skyscreamer.jsonassert.comparator.JSONCompareUtil;
 import com.rest.test.framework.util.ApiTestConstants;
 
 
+/**
+ * This utility class is used for comparing two different JSON data.
+ * <br><br>
+ * Used JSONassert library <a href="https://github.com/skyscreamer/JSONassert">https://github.com/skyscreamer/JSONassert</a>
+ * 
+ * @author SrinivasDonapati
+ *
+ */
 public class RestJsonUnitTest {
 	private String expectedJson = null;
 	private String actualJson = null;
@@ -45,6 +53,9 @@ public class RestJsonUnitTest {
 		}
 	}
 	
+	/**
+	 * Running JSON Unit
+	 */
 	public void execute() {
 		fixJsonStrings();
 		

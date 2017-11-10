@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.aopalliance.reflect.Code;
 import org.junit.Test;
+import org.junit.internal.runners.JUnit38ClassRunner;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -31,9 +33,23 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
 /**
- * This is base class for API tests.
- * By extending this class, child test classes will get access to 
- * overriding testing functionality
+ * This is the base class used for creating test classes.
+ * <br><br>
+ * 
+ * Create a sub class and pass test info by adding below method <br><br>
+ * <pre>	@Parameters(name = "{0}")
+	public static Collection<Object[]> data() throws Exception{
+		setPropertyFile("../../test_file.properties");
+		return RestApiBaseTest.data();
+	}
+ * </pre>
+ * 
+ * 
+ * <br> 
+ * Override {@code setUp} and {@code tearDown} to track test class's life cycle
+ * <br><br>
+ * Override {@code handleApiRequest} and {@code handleApiReponse} to track API Calls's life cycle
+ * 
  * @author SrinivasDonapati
  *
  */
@@ -53,11 +69,19 @@ public abstract class RestApiBaseTest {
 	private boolean isPerformanceTrackOn = false;
 	private PerformanceTracker performanceTracker = null;
 	
+	/**
+	 * Default constructor used by {@link Parameterized} to pass list of {@link ApiCallInfo} as individual tests
+	 * @param apiName Name of the API Call
+	 * @param apiCallInfo Api Call Info
+	 */
 	public RestApiBaseTest(String apiName, ApiCallInfo apiCallInfo) {
 		this.apiCallInfo = apiCallInfo;
 		init();
 	}
 	
+	/**
+	 * Initializing API Call tests
+	 */
 	private void init() {
 		this.testSuite = RestApiBaseTestSuite.getTestSuite(apiCallInfo);
 		
@@ -71,10 +95,16 @@ public abstract class RestApiBaseTest {
 		initializeRandomValues();
 	}
 	
+	/**
+	 * Setting up test class
+	 */
 	public void setUp() {
 		testSuite.setUpClass(apiCallInfo.getApiTestInfo());
 	}
 	
+	/**
+	 * Tearing down test class
+	 */
 	public void tearDown() {
 		testSuite.tearDownClass(apiCallInfo.getApiTestInfo());
 		if (performanceTracker != null) {
@@ -82,6 +112,11 @@ public abstract class RestApiBaseTest {
 		}
 	}
 	
+	/**
+	 * Converts and returns {@link ApiTestInfo} into JUNIT tests
+	 * @return List of Api Calls as tests
+	 * @throws Exception
+	 */
 	@Parameters(name = "{0}")
 	public synchronized static Collection<Object[]> data() throws Exception{
 		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(PROPERTY_FILE_PATH);
@@ -113,6 +148,9 @@ public abstract class RestApiBaseTest {
 		return data;
 	}
 	
+	/**
+	 * JUNIT test method used to test each API call
+	 */
 	@Test
 	public void testApi() {
 		try {
@@ -153,6 +191,10 @@ public abstract class RestApiBaseTest {
 		}
 	}
 	
+	/**
+	 * Initializing random and system time values can be used in TEST_VARS or SUITE_VARS by using
+	 * RANDOM_VALUE or SYSTEM_TIME
+	 */
 	private void initializeRandomValues() {
 	    randomNumber = new Random().nextInt();
 		if (randomNumber < 0) {
@@ -162,19 +204,24 @@ public abstract class RestApiBaseTest {
 		systemTime = System.currentTimeMillis();	
 	}
 	
+	/**
+	 * Resolving API Call dependencies <br>
+	 * <li>Fetching constant variables</li>
+	 * <li>Replacing variables in URL and Request Body</li>
+	 */
 	public void resolveApiCallInfo() {
 		initializeStaticVariables(false);
 		initializeStaticVariables(true);
 		
 		// Resolving dynamic fields in request URL
 		String url = apiCallInfo.getUrl();
-		List<String> dynUrlFields = fetchDynamicFields(url);
-		url = resolveDynamicFields(url, dynUrlFields, API_TEST_INFO_TYPE.URL);
+		List<String> varsUsed = fetchVariableNamesUsed(url);
+		url = resolveDynamicVariablesUsed(url, varsUsed, API_TEST_INFO_TYPE.URL);
 			
 		// Resolving dynamic fields in request body
 		String requestBody = apiCallInfo.getRequest();
-		dynUrlFields = fetchDynamicFields(requestBody);
-		requestBody = resolveDynamicFields(requestBody, dynUrlFields, API_TEST_INFO_TYPE.REQUEST);	
+		varsUsed = fetchVariableNamesUsed(requestBody);
+		requestBody = resolveDynamicVariablesUsed(requestBody, varsUsed, API_TEST_INFO_TYPE.REQUEST);	
 		
 		url = url.replace(ApiTestConstants.PROPERTY_VARIABLE_RANDOM, randomNumber + "");
 		url = url.replace(ApiTestConstants.PROPERTY_VARIABLE_SYS_TIME, systemTime + "");
@@ -189,10 +236,16 @@ public abstract class RestApiBaseTest {
 	}
 	
 	
-	private List<String> fetchDynamicFields(String source) {
+	/**
+	 * Returns list of variable names used in passed String.
+	 * <b>{variable_name}</b> format is used to find variables used.
+	 * @param source
+	 * @return
+	 */
+	private List<String> fetchVariableNamesUsed(String source) {
 		if (source == null || source.trim().length() == 0) { return null; }
 		
-		List<String> dynUrlFields = new ArrayList<String>();
+		List<String> varsList = new ArrayList<String>();
 		int index = 0;
 		while (index != -1 && index < source.length()) {
 			int startIndex = source.indexOf("{", index);
@@ -200,23 +253,27 @@ public abstract class RestApiBaseTest {
 			if (startIndex != -1) {
 				endIndex = source.indexOf("}", startIndex);
 				if (endIndex != -1) {
-					String dynField = source.substring(startIndex + 1, endIndex);
-					if (!dynField.contains(":")) {
-						dynUrlFields.add(dynField);
+					String var = source.substring(startIndex + 1, endIndex);
+					if (!var.contains(":")) {
+						varsList.add(var);
 					}
 				}
 			}
 			
 			index = (startIndex == -1 ? startIndex : startIndex + 1);
 		}
-		return dynUrlFields;
+		return varsList;
 	}
 	
-
-	
-	
-	private String resolveDynamicFields(String source, List<String> dynUrlFields, API_TEST_INFO_TYPE type) {
-		if (dynUrlFields == null || dynUrlFields.size() == 0) {
+	/**
+	 * Replacing all the dynamic variables with the variable values from test and suite variables
+	 * @param source Source string to be resolved
+	 * @param usedVarsList dynamic variable list
+	 * @param type Type of source
+	 * @return Resolved data
+	 */
+	private String resolveDynamicVariablesUsed(String source, List<String> usedVarsList, API_TEST_INFO_TYPE type) {
+		if (usedVarsList == null || usedVarsList.size() == 0) {
 			return source;
 		}
 		
@@ -224,7 +281,7 @@ public abstract class RestApiBaseTest {
 			return source;
 		}
 		
-		for(String dynField : dynUrlFields) {
+		for(String dynField : usedVarsList) {
 			String variableVal = null;
 			{
 				// Fetching variable value from local map
@@ -251,6 +308,12 @@ public abstract class RestApiBaseTest {
 	}
 	
 
+	/**
+	 * Converting API Call info into HTTP request<br>
+	 * This method is called before sending API Call to server <br>
+	 * It includes request initialization and resolving API Call Info.
+	 * @throws Exception
+	 */
 	public void handleApiRequest() throws Exception {
 		resolveApiCallInfo();
 		
@@ -274,8 +337,10 @@ public abstract class RestApiBaseTest {
 	}
 	
 	/**
-	 * Handling API request after getting response from server
-	 * @param response
+	 * Handling API Call info after getting response from server.<br>
+	 * <li>Checking the HTTP status</li>
+	 * <li>Fetching variable information</li>
+	 * <li>Evaluating test</li>
 	 */
 	public void handleApiResponse() {
 		RestCallResponse restCallResponse = apiCallInfo.getRestCallResponse();
@@ -296,6 +361,12 @@ public abstract class RestApiBaseTest {
 		evaluateTest();
 	}
 	
+	
+	/**
+	 * Evaluating test
+	 * <li>Evaluating test condition</li>
+	 * <li>Comparing responses</li>
+	 */
 	private void evaluateTest()
 	{
 		evaluateExpectedExpression();
@@ -325,13 +396,16 @@ public abstract class RestApiBaseTest {
 		}
 	}
 	
+	/**
+	 * Evaluating test condition
+	 */
 	private void evaluateExpectedExpression() {
 		String testCondition = apiCallInfo.getTestCondition();
 		if (testCondition == null || testCondition.trim().length() == 0) return;
 		
-		List<String> dynFields = fetchDynamicFields(testCondition);
-		if (dynFields != null && dynFields.size() > 0) {
-			for(String variableName : dynFields) {
+		List<String> usedVarsList = fetchVariableNamesUsed(testCondition);
+		if (usedVarsList != null && usedVarsList.size() > 0) {
+			for(String variableName : usedVarsList) {
 				String variableValue = testVariableMap.get(variableName);
 				if (variableValue == null) {
 					variableValue = testSuite.getVariableValue(variableName);
@@ -371,10 +445,14 @@ public abstract class RestApiBaseTest {
 		
 	}
 	
-	private void initializeStaticVariables(boolean isGlobal)
+	/**
+	 * Fetching constant variables from test info
+	 * @param isSuite true if variable type is suite otherwise false
+	 */
+	private void initializeStaticVariables(boolean isSuite)
 	{
 		List<VariableInfo> variableList;
-		if (isGlobal) {
+		if (isSuite) {
 			variableList = apiCallInfo.getVariableList();
 		} else {
 			variableList = apiCallInfo.getTestVariableList();
@@ -392,7 +470,7 @@ public abstract class RestApiBaseTest {
 							+ "");
 
 					// Storing variable values in global/test map
-					if (isGlobal) {
+					if (isSuite) {
 						testSuite.setVariableValue(variableName, variableValue);
 					} else {
 						testVariableMap.put(variableName, variableValue);
@@ -402,9 +480,13 @@ public abstract class RestApiBaseTest {
 		}
 	}
 	
-	private void initializeDynamicVariables(boolean isGlobal) {
+	/**
+	 * Fetching dynamic variables from the response
+	 * @param isSuite true if variable type is suite otherwise false
+	 */
+	private void initializeDynamicVariables(boolean isSuite) {
 		List<VariableInfo> variableList;
-		if (isGlobal) {
+		if (isSuite) {
 			variableList = apiCallInfo.getVariableList();
 		} else {
 			variableList = apiCallInfo.getTestVariableList();
@@ -433,7 +515,7 @@ public abstract class RestApiBaseTest {
 				
 				if (parsedVariableValue != null) {
 					// Storing variable values in global/test map
-					if (isGlobal) {
+					if (isSuite) {
 						testSuite.setVariableValue(variableName, parsedVariableValue);
 					}
 					else {
@@ -448,8 +530,7 @@ public abstract class RestApiBaseTest {
 	private static final long DEFAULT_POLL_DURATION = 300 * 1000;
 	
 	/**
-	 * Polling request, with default interval and duration time
-	 * @return Response from the server
+	 * Polling request
 	 * @throws Exception
 	 */
 	public void pollRequest() throws Exception {
@@ -462,7 +543,6 @@ public abstract class RestApiBaseTest {
 	 * Polling request, to check the status of the triggered operation on server
 	 * @param pollDuration Time in milliseconds
 	 * @param pollInterval Time in milliseconds
-	 * @return Response from the server
 	 * @throws Exception
 	 */
 	public void pollRequest(long pollDuration, long pollInterval) throws Exception {
@@ -488,14 +568,18 @@ public abstract class RestApiBaseTest {
 	}
 	
 	/**
-	 * Setting the property file path
-	 * @param fileName
+	 * Passing test file path
+	 * @param filePath Path of the property file
 	 */
 	public synchronized static void setPropertyFile(String filePath) {
 		PROPERTY_FILE_PATH = filePath;
 	}
 	
 	
+	/**
+	 * Returns detailed assertion message
+	 * @return Assertion message
+	 */
 	public String getRequestAssertionMessage() {
 		String assertionMessage =	"\nRequest Details:\n";
 		assertionMessage		+=	"----------------\n";
@@ -543,32 +627,35 @@ public abstract class RestApiBaseTest {
 		return assertionMessage;
 	}
 	
+	/**
+	 * Enum to define data type
+	 * @author SrinivasDonapati
+	 */
 	private enum API_TEST_INFO_TYPE {
 		URL, REQUEST, RESPONSE
 	}
 	
+	/**
+	 * Returns API test info.<br>
+	 * {@link ApiTestInfo} is created after test initialization.
+	 * @return {@link ApiTestInfo}
+	 */
 	public static ApiTestInfo getApiTestInfo() {
 		return apiTestInfo;
 	}
 	
-	public static void main(String[] args) {
-		 ScriptEngineManager mgr = new ScriptEngineManager();
-		 ScriptEngine engine = mgr.getEngineByName("JavaScript");
-		 String foo = "(30==30 && \"tes\" ==\"test\")";
-		 try {
-			 boolean result = Boolean.parseBoolean(engine.eval(foo).toString());
-			System.out.println(result);
-		}
-		catch (ScriptException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
+	/**
+	 * Returns running test suite instance
+	 * @return Instance of {@link RestApiBaseTestSuite}
+	 */
 	public RestApiBaseTestSuite getTestSuite() {
 		return testSuite;
 	}
 	
+	/**
+	 * Returns currently Rest util
+	 * @return Instance of {@link RestNetworkUtil}
+	 */
 	public RestNetworkUtil getRestUtil() {
 		return testSuite.getRestUtil();
 	}

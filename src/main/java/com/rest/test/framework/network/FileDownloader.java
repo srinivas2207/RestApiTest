@@ -12,11 +12,23 @@ import java.util.Map.Entry;
 
 import com.rest.test.framework.network.RestNetworkUtil.RestCallResponse;
 
+/**
+ * HTTP Util method for downloading files
+ * @author SrinivasDonapati
+ *
+ */
 public class FileDownloader {
 	private HttpURLConnection httpConn;
 	private static final int BUFFER_SIZE = 4096;
 	private String dirPath = null;
 	
+	/**
+	 * Initializing the file downloader
+	 * @param serverUrl Valid URL
+	 * @param dirPath Location of the directory, in which the file to be stored
+	 * @param headers headers
+	 * @throws IOException
+	 */
 	public FileDownloader(String serverUrl, String dirPath, Map<String, String> headers) throws IOException {
 		this.dirPath = dirPath;
 		
@@ -34,6 +46,11 @@ public class FileDownloader {
 		}
 	}
 	
+	/**
+	 * Firing download operation
+	 * @return {@link RestCallResponse} object containing the HTTP response information
+	 * @throws IOException
+	 */
 	public RestCallResponse finish() throws IOException {
 		RestCallResponse restCallResponse = new RestCallResponse();
 		String fileName = null;

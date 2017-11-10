@@ -15,7 +15,7 @@ import com.rest.test.framework.ApiTestInfo;
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 
 /**
- * Custom property reader to escape special characters and parse the property file
+ * Custom property reader to parse the test files
  * 
  * @author SrinivasDonapati
  */
