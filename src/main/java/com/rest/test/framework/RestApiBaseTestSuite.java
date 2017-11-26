@@ -139,7 +139,7 @@ public class RestApiBaseTestSuite {
 	 * Setting test suite configuration
 	 * @param config {@link RestSuiteConfiguration}
 	 */
-	public void initConfig(RestSuiteConfiguration config)
+	public final void initConfig(RestSuiteConfiguration config)
 	{
 		if(config.getBaseUrl() != null) {
 			getRestUtil().setBaseUrl(config.getBaseUrl());
