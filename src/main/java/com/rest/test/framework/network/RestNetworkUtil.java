@@ -21,6 +21,8 @@ import java.util.Map.Entry;
 
 
 
+
+
 import javax.ws.rs.HttpMethod;
 
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
@@ -185,7 +187,7 @@ public class RestNetworkUtil {
 	 * @return
 	 * @throws Exception
 	 */
-	private RestCallResponse doGet(String reqUrl, Map<String, String> headers) throws Exception{
+	public RestCallResponse doGet(String reqUrl, Map<String, String> headers) throws Exception{
 		return sendHttpRequest(HttpMethod.GET, reqUrl, null, headers);
 	}
 
@@ -241,7 +243,7 @@ public class RestNetworkUtil {
 				conn.setUseCaches(false);
 				conn.setRequestMethod(httpMethod);
 				conn.setRequestProperty("Content-Type", "application/json; charset=utf8");
-				
+				//conn.setConnectTimeout(20*1000);
 				// adding header params
 				if (headers != null) {
 					Iterator<Entry<String, String>> iterator = headers.entrySet().iterator();
@@ -443,4 +445,5 @@ public class RestNetworkUtil {
 			return this.headers;
 		}
 	}
+	
 }

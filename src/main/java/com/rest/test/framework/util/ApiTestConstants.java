@@ -31,6 +31,7 @@ public class ApiTestConstants {
 	public static final String PROPERTY_VARIABLE_RANDOM		= "RANDOM_VALUE";
 	public static final String PROPERTY_VARIABLE_SYS_TIME	= "SYSTEM_TIME";
 
+	public static final String IGNORE_STRING 				= "IGNORE_STRING";
 	public static final String IGNORE_VALUE 				= "IGNORE_VALUE";
 	
 	public static final String EXPECTED_VALUE_PATH			= "path";

@@ -10,9 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.aopalliance.reflect.Code;
 import org.junit.Test;
-import org.junit.internal.runners.JUnit38ClassRunner;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -388,9 +386,8 @@ public abstract class RestApiBaseTest {
 		else if (testType.equals(TEST_TYPE.STRING_UNIT.toString())) {
 			expectedResponse = expectedResponse == null ? "" : expectedResponse.trim();
 			currentResponse = currentResponse == null ? "" : currentResponse.trim();
-
-			if (!expectedResponse.equals(currentResponse)) {
-				String assertionMessage = "Expected and current results are not matching :";
+			String assertionMessage = "Expected and current results are not matching :";
+			if (!new RestStringUnitTest(expectedResponse, currentResponse).compare()) {	
 				throw new AssertionError(assertionMessage);
 			}
 		}

@@ -1,7 +1,5 @@
 package com.rest.test.framework;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
@@ -11,9 +9,6 @@ import org.xmlunit.diff.Comparison;
 import org.xmlunit.diff.ComparisonResult;
 import org.xmlunit.diff.Diff;
 import org.xmlunit.diff.DifferenceEvaluator;
-
-import com.rest.test.framework.util.ApiTestConstants;
-
 
 /**
  * This Utility class is used for comparing two different XML data.
@@ -72,16 +67,16 @@ public class RestXmlUnitTest {
 				String actualValue = ((Text) testNode).getData();
 				String expectedValue = ((Text) controlNode).getData();
 				
-				// Ignoring failures, if the failure values is marked as IGNORE
-				if (expectedValue.contains(ApiTestConstants.IGNORE_VALUE)) {
+				// Handling JSON test values
+				if (RestJsonUnitTest.isValidJson(actualValue) && RestJsonUnitTest.isValidJson(expectedValue) ){
+					RestJsonUnitTest restJsonUnitTest = new RestJsonUnitTest(expectedValue, actualValue, false);
+					restJsonUnitTest.execute();
 					return ComparisonResult.EQUAL;
 				}
 				
-				// Handling JSON test values
-				if (isValidJson(actualValue) && isValidJson(expectedValue) ){
-					RestJsonUnitTest restJsonUnitTest = new RestJsonUnitTest(expectedValue, actualValue, false);
-					restJsonUnitTest.execute();
-
+				// Handling Plain String values
+				RestStringUnitTest restStringUnitTest = new RestStringUnitTest(expectedValue, actualValue);
+				if (restStringUnitTest.compare()) {
 					return ComparisonResult.EQUAL;
 				}
 				
@@ -91,29 +86,18 @@ public class RestXmlUnitTest {
 			// Handling attribute value mismatch
 			if (controlNode instanceof Attr && testNode instanceof Attr) {
 				String expectedValue = ((Attr) controlNode).getValue();
-				if (expectedValue.contains(ApiTestConstants.IGNORE_VALUE)) {
+				String actualValue = ((Attr) testNode).getValue();
+			
+				// Handling Plain String values
+				RestStringUnitTest restStringUnitTest = new RestStringUnitTest(expectedValue, actualValue);
+				if (restStringUnitTest.compare()) {
 					return ComparisonResult.EQUAL;
 				}
-	            return outcome;
+				
+				return outcome;
 	        }
 
 			return outcome;
 		}
-	}
-
-
-	private boolean isValidJson(String jsonString) {
-		try {
-			JSONObject obj = new JSONObject(jsonString);
-			return true;
-		} catch (Exception objCreateExcepetion) {
-			try {
-				JSONArray arr = new JSONArray(jsonString);
-				return true;
-			} catch (Exception arrayCreateException) {
-
-			}
-		}
-		return false;
 	}
 }

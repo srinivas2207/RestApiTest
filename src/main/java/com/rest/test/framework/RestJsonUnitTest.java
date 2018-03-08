@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.skyscreamer.jsonassert.JSONCompare;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.JSONCompareResult;
@@ -91,11 +92,13 @@ public class RestJsonUnitTest {
     	@Override
         public void compareValues(String prefix, Object expectedValue, Object actualValue, JSONCompareResult result)
                 throws JSONException {
-    		// Ignoring failures caused due to unmatched values marked as IGNORE_VALUE
-    		if (expectedValue != null
-    				&& expectedValue.toString().equals(ApiTestConstants.IGNORE_VALUE)) {
-    			return;
-    		}
+    		if (expectedValue != null && actualValue != null && !isValidJson(expectedValue.toString())
+					&& !isValidJson(actualValue.toString())) {
+				// Handling Plain String values
+				RestStringUnitTest restStringUnitTest = new RestStringUnitTest(expectedValue.toString(),
+						actualValue.toString());
+				if (restStringUnitTest.compare()) { return; }
+			}
     		super.compareValues(prefix, expectedValue, actualValue, result);
         }
     	
@@ -106,19 +109,68 @@ public class RestJsonUnitTest {
 			Map<Object, Integer> expectedCount = JSONCompareUtil.getCardinalityMap(jsonArrayToList(expected));
 			Map<Object, Integer> actualCount = JSONCompareUtil.getCardinalityMap(jsonArrayToList(actual));
 			for (Object o : expectedCount.keySet()) {
-				if (o != null && o instanceof String && o.equals(ApiTestConstants.IGNORE_VALUE)) {
+				
+				// Ignoring comparing of an array item, which is marked as
+				// IGNORE_STRING
+				if (o != null && o.toString().contains(ApiTestConstants.IGNORE_STRING)) {
 					continue;
 				}
-				
+
+				// Finding the matched string inside array, if the expected
+				// array element contains IGNORE_VALUE
+				if (o != null && o.toString().contains(ApiTestConstants.IGNORE_VALUE)) {
+					if (_findInArray(o.toString(), actual)) {
+						continue;
+					}
+				}
+
 				if (!actualCount.containsKey(o)) {
 					result.missing(key + "[]", o);
-				}
-				else if (actualCount.get(o) < expectedCount.get(o)) {
-					result.fail(key + "[]: Expected " + expectedCount.get(o) + " occurrence(s) of " + o
-							+ " but got " + actualCount.get(o) + " occurrence(s)");
+				} else if (actualCount.get(o) < expectedCount.get(o)) {
+					result.fail(key + "[]: Expected " + expectedCount.get(o) + " occurrence(s) of " + o + " but got "
+							+ actualCount.get(o) + " occurrence(s)");
 				}
 			}
 		}
+		
+		/**
+		 * Finding the matched element inside an array
+		 * 
+		 * @param expected
+		 * @param actualArr
+		 * @return
+		 */
+		private boolean _findInArray(String expected, JSONArray actualArr) {
+			if (actualArr == null || actualArr.length() == 0) {
+				return false;
+			}
+
+			for (int i = 0; i < actualArr.length(); i++) {
+				String actualVal = actualArr.get(i).toString();
+				// Handling Plain String values
+				RestStringUnitTest restStringUnitTest = new RestStringUnitTest(expected, actualVal);
+				if (restStringUnitTest.compare()) {
+					return true;
+				}
+			}
+
+			return false;
+		}
 
     }
+    
+    public static boolean isValidJson(String jsonString) {
+		try {
+			JSONObject obj = new JSONObject(jsonString);
+			return true;
+		} catch (Exception objCreateExcepetion) {
+			try {
+				JSONArray arr = new JSONArray(jsonString);
+				return true;
+			} catch (Exception arrayCreateException) {
+
+			}
+		}
+		return false;
+	}
 }
