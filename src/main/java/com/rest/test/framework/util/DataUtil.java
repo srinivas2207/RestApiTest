@@ -10,8 +10,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import net.minidev.json.JSONArray;
-
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -85,11 +85,20 @@ public class DataUtil
 	 * @param data
 	 * @return
 	 */
-	public static boolean isJsonData(String data)
-	{
-		if ((data.startsWith("{") && data.endsWith("}")) || (data.startsWith("[") && data.endsWith("]"))) { return true; }
-		return false;
-	}
+	 public static boolean isValidJson(String jsonString) {
+			try {
+				JSONObject obj = new JSONObject(jsonString);
+				return true;
+			} catch (Exception objCreateExcepetion) {
+				try {
+					JSONArray arr = new JSONArray(jsonString);
+					return true;
+				} catch (Exception arrayCreateException) {
+
+				}
+			}
+			return false;
+		}
 	
 	/**
 	 * Configuring JSON Path
@@ -117,8 +126,8 @@ public class DataUtil
 		Object jsonDoc = configJsonPath(jsonData);		
 		try {
 			Object result = JsonPath.read(jsonDoc, jsonPath);
-			if (result instanceof JSONArray) {
-				return ((JSONArray) result).get(0);
+			if (result instanceof net.minidev.json.JSONArray) {
+				return ((net.minidev.json.JSONArray) result).get(0);
 			} else {
 				return result;
 			}
@@ -127,6 +136,7 @@ public class DataUtil
 			throw new AssertionError(assertionMessage);
 		}
 	}
+	
 	
 	/**
 	 * Returns the type of the data
@@ -148,4 +158,5 @@ public class DataUtil
 	public enum VARIABLE_VALUE_TYPE	{
 		JSON_PATH, XML_PATH, CONSTANT
 	}
+	
 }

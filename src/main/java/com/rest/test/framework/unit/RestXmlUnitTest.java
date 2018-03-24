@@ -1,4 +1,4 @@
-package com.rest.test.framework;
+package com.rest.test.framework.unit;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Node;
@@ -9,6 +9,8 @@ import org.xmlunit.diff.Comparison;
 import org.xmlunit.diff.ComparisonResult;
 import org.xmlunit.diff.Diff;
 import org.xmlunit.diff.DifferenceEvaluator;
+
+import com.rest.test.framework.util.DataUtil;
 
 /**
  * This Utility class is used for comparing two different XML data.
@@ -68,7 +70,7 @@ public class RestXmlUnitTest {
 				String expectedValue = ((Text) controlNode).getData();
 				
 				// Handling JSON test values
-				if (RestJsonUnitTest.isValidJson(actualValue) && RestJsonUnitTest.isValidJson(expectedValue) ){
+				if (DataUtil.isValidJson(actualValue) && DataUtil.isValidJson(expectedValue) ){
 					RestJsonUnitTest restJsonUnitTest = new RestJsonUnitTest(expectedValue, actualValue, false);
 					restJsonUnitTest.execute();
 					return ComparisonResult.EQUAL;

@@ -1,4 +1,4 @@
-package com.rest.test.framework;
+package com.rest.test.framework.unit;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 
-import org.json.JSONArray;
-
 import com.rest.test.framework.ApiTestInfo;
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 
@@ -31,11 +29,9 @@ public class ApiTestPropertyReader extends Properties
 
 		while (in.hasNext()) {
 			String lineTxt = in.nextLine(); // .replace("\\", "\\\\");
-
-			if (lineTxt != null && !lineTxt.startsWith("#")) {
-				propertyList.add(lineTxt);
-			}
-
+			
+			propertyList.add(lineTxt);
+			
 			out.write(lineTxt.getBytes());
 			out.write("\n".getBytes());
 		}
@@ -55,15 +51,24 @@ public class ApiTestPropertyReader extends Properties
 	{
 		ApiTestInfo apiTestInfo = new ApiTestInfo();
 		ApiCallInfo apiCallInfo = null;
+		
+		int lineNumber = 0;
 
 		for (String property : propertyList) {
+			lineNumber++;
+			
+			if (property == null || property.trim().length() == 0 ||
+					property.trim().startsWith("#")) {
+				continue;
+			}
+			
 			if (property.startsWith(ApiTestConstants.PROPERTY_TEST_NAME)) {
 				apiTestInfo.setTestName(getPropertyValue(property));
 			}
 
 			else if (property.startsWith(ApiTestConstants.PROPERTY_API)) {
 				String apiName = getPropertyValue(property);
-				apiCallInfo = apiTestInfo.createApiCallInfo(apiName);
+				apiCallInfo = apiTestInfo.createApiCallInfo(apiName, lineNumber);
 			}
 			else if (property.startsWith(ApiTestConstants.PROPERTY_URL)) {
 				String url = getPropertyValue(property);
@@ -92,17 +97,17 @@ public class ApiTestPropertyReader extends Properties
 				String testCondition = getPropertyValue(property);
 				apiCallInfo.setTestCondition(testCondition);
 			}
-			else if (property.startsWith(ApiTestConstants.PROPERTY_TEST_TYPE)) {
-				String testType = getPropertyValue(property);
-				apiCallInfo.setTestType(testType);
+			else if (property.startsWith(ApiTestConstants.PROPERTY_COMPARE_RESPONSE)) {
+				String compareResponse = getPropertyValue(property);
+				if (compareResponse != null
+						&& (compareResponse.trim().equalsIgnoreCase("true") || compareResponse.trim()
+								.equalsIgnoreCase("on"))) {
+					apiCallInfo.setCompareResponse(true);
+				}
 			}
-			else if (property.startsWith(ApiTestConstants.PROPERTY_TEST_VARS)) {
-				String testVars = getPropertyValue(property);
-				apiCallInfo.setTestVariableInfo(testVars);
-			}
-			else if (property.startsWith(ApiTestConstants.PROPERTY_SUITE_VARS)) {
-				String suiteVars = getPropertyValue(property);
-				apiCallInfo.setVariableInfo(suiteVars);
+			else if (property.startsWith(ApiTestConstants.PROPERTY_VARS)) {
+				String vars = getPropertyValue(property);
+				apiCallInfo.setVariableInfo(vars);
 			} 
 			else if (property.startsWith(ApiTestConstants.PROPERTY_TEST_WAIT_TIME)) {
 				String str = getPropertyValue(property);
@@ -123,7 +128,10 @@ public class ApiTestPropertyReader extends Properties
 				String headersStr = getPropertyValue(property);
 				apiCallInfo.setHeaders(headersStr);
 			}
-			
+			else if (property.startsWith(ApiTestConstants.PROPERTY_LOG_MSG)) {
+				String logMessage = getPropertyValue(property);
+				apiCallInfo.setLogMessage(logMessage);
+			}
 		}
 
 		return apiTestInfo;

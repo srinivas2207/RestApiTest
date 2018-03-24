@@ -1,4 +1,4 @@
-package com.rest.test.framework;
+package com.rest.test.framework.unit;
 
 import static org.skyscreamer.jsonassert.comparator.JSONCompareUtil.jsonArrayToList;
 
@@ -15,6 +15,7 @@ import org.skyscreamer.jsonassert.comparator.JSONComparator;
 import org.skyscreamer.jsonassert.comparator.JSONCompareUtil;
 
 import com.rest.test.framework.util.ApiTestConstants;
+import com.rest.test.framework.util.DataUtil;
 
 
 /**
@@ -92,8 +93,8 @@ public class RestJsonUnitTest {
     	@Override
         public void compareValues(String prefix, Object expectedValue, Object actualValue, JSONCompareResult result)
                 throws JSONException {
-    		if (expectedValue != null && actualValue != null && !isValidJson(expectedValue.toString())
-					&& !isValidJson(actualValue.toString())) {
+    		if (expectedValue != null && actualValue != null && !DataUtil.isValidJson(expectedValue.toString())
+					&& !DataUtil.isValidJson(actualValue.toString())) {
 				// Handling Plain String values
 				RestStringUnitTest restStringUnitTest = new RestStringUnitTest(expectedValue.toString(),
 						actualValue.toString());
@@ -158,19 +159,4 @@ public class RestJsonUnitTest {
 		}
 
     }
-    
-    public static boolean isValidJson(String jsonString) {
-		try {
-			JSONObject obj = new JSONObject(jsonString);
-			return true;
-		} catch (Exception objCreateExcepetion) {
-			try {
-				JSONArray arr = new JSONArray(jsonString);
-				return true;
-			} catch (Exception arrayCreateException) {
-
-			}
-		}
-		return false;
-	}
 }

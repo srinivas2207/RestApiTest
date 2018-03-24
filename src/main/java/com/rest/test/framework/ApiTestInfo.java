@@ -62,12 +62,14 @@ public class ApiTestInfo {
 	/**
 	 * Creating ApiCallInfo Object using API Call Name
 	 * @param apiName Name of the API Call
+	 * @param lineNumber Line Number inside property file
 	 * @return {@link ApiCallInfo} Object
 	 */
-	public ApiCallInfo createApiCallInfo(String apiName) {
+	public ApiCallInfo createApiCallInfo(String apiName, int lineNumber) {
 		ApiCallInfo reqInfo = new ApiCallInfo();
 		reqInfo.setName(apiName);
 		reqInfo.setId(apiRequestId++);
+		reqInfo.setLineNumberInPropertyFile(lineNumber);
 		apiCallList.add(reqInfo);
 		return reqInfo;
 	}
@@ -99,16 +101,17 @@ public class ApiTestInfo {
 		private int reqStatus;
 		private String request = null;
 		private String response = null;
-		private List<VariableInfo> testVariableList = new ArrayList<VariableInfo>();
 		private List<VariableInfo> variableList = new ArrayList<VariableInfo>();
 		private Map<String, String> headers;
 		private String testCondition;
 		private boolean poll = false;
-		private String testType = null;
+		private boolean compareResponse = false;
 		private RestCallResponse restCallResponse;
 		private boolean isFirstTest;
 		private boolean isLastTest;
-		
+		private int lineNumberInPropertyFile;
+		private String logMessage;
+
 		private int pollTime;
 		private int pollInterval;
 		private int waitTime;
@@ -196,6 +199,23 @@ public class ApiTestInfo {
 		public void setId(long id)
 		{
 			this.id = id;
+		}
+		
+		/**
+		 * Getting the test's line number inside property file
+		 * @return Line Number
+		 */
+		public int getLineNumberInPropertyFile()
+		{
+			return lineNumberInPropertyFile;
+		}
+
+		/**
+		 * Setting the test's line number inside property file
+		 */
+		public void setLineNumberInPropertyFile(int lineNumberInPropertyFile)
+		{
+			this.lineNumberInPropertyFile = lineNumberInPropertyFile;
 		}
 		
 		/**
@@ -305,33 +325,7 @@ public class ApiTestInfo {
 				}
 			}
 		}
-		
-		/**
-		 * Returns list of test variables (Api Call specific)
-		 * @return List of {@link VariableInfo}
-		 */
-		public List<VariableInfo> getTestVariableList()
-		{
-			return testVariableList;
-		}
-		
-		public void setTestVariableInfo(String variableInfo)
-		{
-			if (variableInfo != null && variableInfo.trim().length() > 0) {
-				JSONArray varList = new JSONArray(variableInfo);
-				if (varList != null && varList.length() > 0) {
-					for (int i = 0; i < varList.length(); i++) {
-						String str = varList.getString(i);
-						String variableName = varList.getString(i).substring(0, str.indexOf("="));
-						String variableValue = varList.getString(i).substring(str.indexOf("=") + 1, str.length());
-						VariableInfo varInfo = new VariableInfo();
-						varInfo.setVariableName(variableName);
-						varInfo.setVariableValue(variableValue);
-						testVariableList.add(varInfo);
-					}
-				}
-			}
-		}
+	
 		
 		/**
 		 * Returns API test condition passed from test file
@@ -347,17 +341,21 @@ public class ApiTestInfo {
 		}
 		
 		/**
-		 * Returns Test type
-		 * @return Type of test (XML_UNIT | JSON_UNIT | STRING_UNIT)
+		 * Checks whether the comparing response mode is on
+		 * @return
 		 */
-		public String getTestType()
+		public boolean isCompareResponse()
 		{
-			return testType;
+			return this.compareResponse;
 		}
 
-		public void setTestType(String testType)
+		/**
+		 * Setting the test's comparing response mode
+		 * @param compareResponse
+		 */
+		public void setCompareResponse(boolean compareResponse)
 		{
-			this.testType = testType;
+			this.compareResponse = compareResponse;
 		}
 		
 		/**
@@ -428,6 +426,25 @@ public class ApiTestInfo {
 					}
 				}
 			}
+		}
+		
+		/**
+		 * Getting the log message of the test
+		 * @return
+		 */
+		public String getLogMessage()
+		{
+			return logMessage;
+		}
+
+		
+		/**
+		 * Setting the log message of the test
+		 * @param logMessage
+		 */
+		public void setLogMessage(String logMessage)
+		{
+			this.logMessage = logMessage;
 		}
 
 	}

@@ -5,9 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import org.junit.Test;
@@ -19,8 +17,10 @@ import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 import com.rest.test.framework.ApiTestInfo.VariableInfo;
 import com.rest.test.framework.network.RestNetworkUtil;
 import com.rest.test.framework.network.RestNetworkUtil.RestCallResponse;
+import com.rest.test.framework.unit.RestJsonUnitTest;
+import com.rest.test.framework.unit.RestStringUnitTest;
+import com.rest.test.framework.unit.RestXmlUnitTest;
 import com.rest.test.framework.util.ApiTestConstants;
-import com.rest.test.framework.util.ApiTestConstants.TEST_TYPE;
 import com.rest.test.framework.util.DataUtil.VARIABLE_VALUE_TYPE;
 import com.rest.test.framework.util.ApiTestPropertyReader;
 import com.rest.test.framework.util.DataUtil;
@@ -61,7 +61,6 @@ public abstract class RestApiBaseTest {
 	public String apiName;
 	public int randomNumber;
 	public long systemTime;
-	public Map<String, String> testVariableMap;
 	private RestApiBaseTestSuite testSuite = null;
 	
 	private boolean isPerformanceTrackOn = false;
@@ -88,8 +87,6 @@ public abstract class RestApiBaseTest {
 			isPerformanceTrackOn = true;
 			performanceTracker = testInfo.getRunTimeTestInfo().getPerformanceTracker();
 		}
-		
-		testVariableMap = new HashMap<String, String>();
 		initializeRandomValues();
 	}
 	
@@ -172,7 +169,12 @@ public abstract class RestApiBaseTest {
 				performanceTracker.setRequestStatus(apiCallInfo.getId(), true);
 			}
 		} catch(Exception  | AssertionError e) {
-			String assertionMessage =  "Exceptions while testing request:\n";
+			String assertionMessage =  "Exceptions while testing request ";
+			assertionMessage += apiCallInfo.getName() + " at line number "
+					+ apiCallInfo.getLineNumberInPropertyFile() + " of "
+					+ apiCallInfo.getApiTestInfo().getPropertyFilePath();
+
+			assertionMessage += "\n\nException Details : \n";
 			
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
@@ -194,10 +196,10 @@ public abstract class RestApiBaseTest {
 	 * RANDOM_VALUE or SYSTEM_TIME
 	 */
 	private void initializeRandomValues() {
-	    randomNumber = new Random().nextInt();
-		if (randomNumber < 0) {
-			randomNumber *= -1;
-		}
+		
+		// Generating a random number with the length 4
+		Random rnd = new Random();
+		randomNumber = 1000 + rnd.nextInt(9000);
 		
 		systemTime = System.currentTimeMillis();	
 	}
@@ -207,19 +209,18 @@ public abstract class RestApiBaseTest {
 	 * <li>Fetching constant variables</li>
 	 * <li>Replacing variables in URL and Request Body</li>
 	 */
-	public void resolveApiCallInfo() {
-		initializeStaticVariables(false);
-		initializeStaticVariables(true);
+	private void resolveApiCallInfo() {
+		initializeConstantVariables();
 		
 		// Resolving dynamic fields in request URL
 		String url = apiCallInfo.getUrl();
 		List<String> varsUsed = fetchVariableNamesUsed(url);
-		url = resolveDynamicVariablesUsed(url, varsUsed, API_TEST_INFO_TYPE.URL);
+		url = resolveDynamicVariablesUsed(url, varsUsed, API_TEST_INFO_TYPE.URL.toString());
 			
 		// Resolving dynamic fields in request body
 		String requestBody = apiCallInfo.getRequest();
 		varsUsed = fetchVariableNamesUsed(requestBody);
-		requestBody = resolveDynamicVariablesUsed(requestBody, varsUsed, API_TEST_INFO_TYPE.REQUEST);	
+		requestBody = resolveDynamicVariablesUsed(requestBody, varsUsed, API_TEST_INFO_TYPE.REQUEST.toString());	
 		
 		url = url.replace(ApiTestConstants.PROPERTY_VARIABLE_RANDOM, randomNumber + "");
 		url = url.replace(ApiTestConstants.PROPERTY_VARIABLE_SYS_TIME, systemTime + "");
@@ -270,7 +271,7 @@ public abstract class RestApiBaseTest {
 	 * @param type Type of source
 	 * @return Resolved data
 	 */
-	private String resolveDynamicVariablesUsed(String source, List<String> usedVarsList, API_TEST_INFO_TYPE type) {
+	private String resolveDynamicVariablesUsed(String source, List<String> usedVarsList, String type) {
 		if (usedVarsList == null || usedVarsList.size() == 0) {
 			return source;
 		}
@@ -282,17 +283,12 @@ public abstract class RestApiBaseTest {
 		for(String dynField : usedVarsList) {
 			String variableVal = null;
 			{
-				// Fetching variable value from local map
-				variableVal = testVariableMap.get(dynField);
-				
 				// Fetching variable value from global map
-				if (variableVal == null) {
-					variableVal = testSuite.getVariableValue(dynField);
-				}
+				variableVal = testSuite.getVariableValue(dynField);
 				
 				if (variableVal == null) {
-					String assertionMessage =  "Unable find the dynamic field : " + "{" + dynField + "}"  + " used in " + type.toString() + "\n";
-					assertionMessage += "Resolve this issue by intializing the field in T_VARIABLES or G_VARIABLES\n";
+					String assertionMessage =  "Unable find the dynamic field : " + "{" + dynField + "}"  + " used in " + type + "\n";
+					assertionMessage += "Resolve this issue by intializing the field in TEST_VARS\n";
 					assertionMessage += "1. [ .., " + dynField + "=<some constant value>" + "] or \n" ;
 					assertionMessage += "2. [ .., " + dynField + "=<JSON PATH>" + "]\n\n" ;
 					throw new AssertionError(assertionMessage);
@@ -353,9 +349,8 @@ public abstract class RestApiBaseTest {
 			throw new AssertionError(assertionMessage);
 		}
 		
-		initializeDynamicVariables(false);
-		initializeDynamicVariables(true);
-		
+		initializeDynamicVariables();
+		logMessage();
 		evaluateTest();
 	}
 	
@@ -369,21 +364,26 @@ public abstract class RestApiBaseTest {
 	{
 		evaluateExpectedExpression();
 
-		String testType = apiCallInfo.getTestType();
-		if (testType == null) { return; }
-
+		if (!apiCallInfo.isCompareResponse()) {
+			return;
+		}
+		
 		String expectedResponse = apiCallInfo.getResponse();
 		String currentResponse = apiCallInfo.getRestCallResponse().getResponse();
-
-		if (testType.equals(TEST_TYPE.XML_UNIT.toString())) {
-			RestXmlUnitTest restXmlUnitTest = new RestXmlUnitTest(expectedResponse, currentResponse);
-			restXmlUnitTest.execute();
+		
+		// skipping comparing responses, if expected and actual responses are empty
+		if ((currentResponse == null || currentResponse.trim().length() == 0)
+				&& (expectedResponse == null || expectedResponse.trim().length() == 0)) {
+			return;
 		}
-		else if (testType.equals(TEST_TYPE.JSON_UNIT.toString())) {
+		
+		if (DataUtil.isValidJson(currentResponse)) {
 			RestJsonUnitTest restJsonUnitTest = new RestJsonUnitTest(expectedResponse, currentResponse, false);
 			restJsonUnitTest.execute();
-		}
-		else if (testType.equals(TEST_TYPE.STRING_UNIT.toString())) {
+		} else if (DataUtil.isXMLData(currentResponse)) {
+			RestXmlUnitTest restXmlUnitTest = new RestXmlUnitTest(expectedResponse, currentResponse);
+			restXmlUnitTest.execute();
+		} else {
 			expectedResponse = expectedResponse == null ? "" : expectedResponse.trim();
 			currentResponse = currentResponse == null ? "" : currentResponse.trim();
 			String assertionMessage = "Expected and current results are not matching :";
@@ -403,14 +403,11 @@ public abstract class RestApiBaseTest {
 		List<String> usedVarsList = fetchVariableNamesUsed(testCondition);
 		if (usedVarsList != null && usedVarsList.size() > 0) {
 			for(String variableName : usedVarsList) {
-				String variableValue = testVariableMap.get(variableName);
-				if (variableValue == null) {
-					variableValue = testSuite.getVariableValue(variableName);
-				}
+				String variableValue = testSuite.getVariableValue(variableName);
 				
 				if (variableValue == null) {
 					String assertionMessage =  "Unable find the dynamic field : " + "{" + variableValue + "}"  + " used in Expected Expression:\n";
-					assertionMessage += "Resolve this issue by intializing the field in T_VARIABLES or G_VARIABLES\n";
+					assertionMessage += "Resolve this issue by intializing the field in TEST_VARS\n";
 					assertionMessage += "1. [ .., " + variableName + "=<some constant value>" + "] or \n" ;
 					assertionMessage += "2. [ .., " + variableName + "=<JSON PATH>" + "]\n\n" ;
 					
@@ -444,16 +441,12 @@ public abstract class RestApiBaseTest {
 	
 	/**
 	 * Fetching constant variables from test info
-	 * @param isSuite true if variable type is suite otherwise false
 	 */
-	private void initializeStaticVariables(boolean isSuite)
+	private void initializeConstantVariables()
 	{
 		List<VariableInfo> variableList;
-		if (isSuite) {
-			variableList = apiCallInfo.getVariableList();
-		} else {
-			variableList = apiCallInfo.getTestVariableList();
-		}
+		
+		variableList = apiCallInfo.getVariableList();
 		
 		if (variableList != null && variableList.size() > 0) {
 			for (VariableInfo varInfo : variableList) {
@@ -466,12 +459,8 @@ public abstract class RestApiBaseTest {
 					variableValue = variableValue.replace(ApiTestConstants.PROPERTY_VARIABLE_SYS_TIME, systemTime
 							+ "");
 
-					// Storing variable values in global/test map
-					if (isSuite) {
-						testSuite.setVariableValue(variableName, variableValue);
-					} else {
-						testVariableMap.put(variableName, variableValue);
-					}
+					// Storing variable values in global variable map
+					testSuite.setVariableValue(variableName, variableValue);
 				}
 			}
 		}
@@ -479,15 +468,10 @@ public abstract class RestApiBaseTest {
 	
 	/**
 	 * Fetching dynamic variables from the response
-	 * @param isSuite true if variable type is suite otherwise false
 	 */
-	private void initializeDynamicVariables(boolean isSuite) {
+	private void initializeDynamicVariables() {
 		List<VariableInfo> variableList;
-		if (isSuite) {
-			variableList = apiCallInfo.getVariableList();
-		} else {
-			variableList = apiCallInfo.getTestVariableList();
-		}
+		variableList = apiCallInfo.getVariableList();
 		
 		if (variableList != null && variableList.size() > 0) {
 			for (VariableInfo varInfo : variableList) {
@@ -511,13 +495,8 @@ public abstract class RestApiBaseTest {
 				}
 				
 				if (parsedVariableValue != null) {
-					// Storing variable values in global/test map
-					if (isSuite) {
-						testSuite.setVariableValue(variableName, parsedVariableValue);
-					}
-					else {
-						testVariableMap.put(variableName, parsedVariableValue);
-					}
+					// Storing variable values in global variable map
+					testSuite.setVariableValue(variableName, parsedVariableValue);
 				}
 			}
 		}
@@ -596,16 +575,6 @@ public abstract class RestApiBaseTest {
 			assertionMessage	+=	"*Test Condition : " + apiCallInfo.getTestCondition() + "\n";
 		}
 		
-		if (apiCallInfo.getTestVariableList()!= null && apiCallInfo.getTestVariableList().size() > 0 ) {
-			assertionMessage	+=	"*Test Variable Declarions :\n";
-			int i = 1;
-			for (VariableInfo variableInfo : apiCallInfo.getTestVariableList()) {
-				String variableName = variableInfo.getVariableName();
-				String variableValue = variableInfo.getVariableValue();
-				assertionMessage += (i ++) + ". " + variableName + "=" + variableValue + "\n";
-			}
-		}
-		
 		if (apiCallInfo.getVariableList()!= null && apiCallInfo.getVariableList().size() > 0 ) {
 			assertionMessage	+=	"*Variable Declarions :\n";
 			int i = 1;
@@ -622,6 +591,34 @@ public abstract class RestApiBaseTest {
 		}
 	
 		return assertionMessage;
+	}
+	
+	/**
+	 * Printing the message of the API Test, provided using property LOG_MSG
+	 */
+	private void logMessage() {
+		if (apiCallInfo.getLogMessage() != null && apiCallInfo.getLogMessage().trim().length() > 0) {
+			String logMessage = apiCallInfo.getLogMessage().trim();
+			
+			String logMessagePrefix = "Log[" + apiCallInfo.getApiTestInfo().getTestName() + "." + apiCallInfo.getName()+ "]";
+			logMessagePrefix += ":\n";
+			
+			//Printing test details, If the log message is marked to print test details
+			if (logMessage.equalsIgnoreCase(ApiTestConstants.PROPERTY_TEST_DETAILS)) {
+				logMessage = getRequestAssertionMessage();
+				System.out.println(logMessagePrefix + logMessage);
+				return;
+			}
+			
+			List<String> varsUsed = fetchVariableNamesUsed(logMessage);
+			String resLogMessage = logMessage;	
+			try {
+				// replacing variables with the values
+				resLogMessage = resolveDynamicVariablesUsed(logMessage, varsUsed, "LOG");
+			}catch(Exception  | AssertionError e){
+			}	
+			System.out.println(logMessagePrefix + resLogMessage);
+		}
 	}
 	
 	/**

@@ -18,12 +18,14 @@ public class ApiTestConstants {
 	public static final String PROPERTY_RESPONSE			= "API_RESPONSE";
 	public static final String PROPERTY_HEADERS				= "API_HEADERS";
 	public static final String PROPERTY_TEST_CONDITION		= "TEST_CONDITION";
-	public static final String PROPERTY_TEST_TYPE			= "TEST_TYPE";
-	public static final String PROPERTY_SUITE_VARS			= "SUITE_VARS";
-	public static final String PROPERTY_TEST_VARS			= "TEST_VARS";
+	public static final String PROPERTY_COMPARE_RESPONSE	= "COMPARE_RESPONSE";
+	public static final String PROPERTY_VARS				= "TEST_VARS";
 	public static final String PROPERTY_TEST_WAIT_TIME		= "WAIT_TIME";
 	public static final String PROPERTY_POLL_TIME			= "POLL_TIME";
 	public static final String PROPERTY_POLL_INTERVAL		= "POLL_INTERVAL";
+	public static final String PROPERTY_LOG_MSG				= "LOG_MSG";
+	
+	public static final String PROPERTY_TEST_DETAILS		= "TEST_DETAILS";
 	
 	public static final String PROPERTY_UPLOAD_REQ_PREFIX	= "UPLOAD_REQUEST";
 	public static final String PROPERTY_DOWNLOAD_REQ_PREFIX	= "DOWNLOAD_REQUEST";
@@ -37,8 +39,5 @@ public class ApiTestConstants {
 	public static final String EXPECTED_VALUE_PATH			= "path";
 	public static final String EXPECTED_VALUE				= "value";
 	
-	
-	public static enum TEST_TYPE {
-		JSON_UNIT, XML_UNIT, STRING_UNIT
-	}
+
 }
