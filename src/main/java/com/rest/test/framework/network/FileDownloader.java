@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,13 +30,14 @@ public class FileDownloader {
 	 * @param headers headers
 	 * @throws IOException
 	 */
-	public FileDownloader(String serverUrl, String dirPath, Map<String, String> headers) throws IOException {
+	public FileDownloader(String serverUrl, String httpMethod, String dirPath, Map<String, String> headers) throws IOException {
 		this.dirPath = dirPath;
 		
 		URL url = new URL(serverUrl);
 		httpConn = (HttpURLConnection) url.openConnection();
-        httpConn.setRequestMethod("POST");
-        httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+		if (httpMethod != null && httpMethod.trim().length() > 0) {
+			httpConn.setRequestMethod(httpMethod.toUpperCase());
+		}
         
         if (headers != null) {
 			Iterator<Entry<String, String>> iterator = headers.entrySet().iterator();
@@ -69,7 +71,13 @@ public class FileDownloader {
                     fileName = disposition.substring(index + 10,
                             disposition.length() - 1);
                 }
-            } 
+            }
+            
+            // If response's Content-Disposition header is not available,
+            // Using the URL to fetch the file name
+            if (fileName == null) {
+            	fileName = _fetchFileName(httpConn.getURL().toString());
+            }
  
             // opens input stream from the HTTP connection
             InputStream inputStream = httpConn.getInputStream();
@@ -87,11 +95,24 @@ public class FileDownloader {
             outputStream.close();
             inputStream.close();
             httpConn.disconnect();
-        } 
+            
+            restCallResponse.setResponse(fileName);
+        } else {
+        	InputStream is = httpConn.getErrorStream();
+        	String errorMsg = RestNetworkUtil.readStream(is);
+        	restCallResponse.setResponse(errorMsg);
+        }
         
         restCallResponse.setStatus(responseCode);
-        restCallResponse.setResponse(fileName);
         return restCallResponse;
+	}
+	
+	private String _fetchFileName(String url) {
+		String[] fields = url.split("/");
+		if (fields.length > 0) {
+			return fields[fields.length-1];
+		}
+		return "file_" + new Date().getTime();
 	}
 
 }

@@ -1,6 +1,5 @@
 package com.rest.test.framework.network;
 
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,15 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-
-
-
-
-
-
 import javax.ws.rs.HttpMethod;
-
+import com.rest.test.framework.ApiTestInfo;
 import com.rest.test.framework.ApiTestInfo.ApiCallInfo;
 import com.rest.test.framework.util.ApiTestConstants;
 
@@ -149,7 +141,7 @@ public class RestNetworkUtil {
 				apiCallInfo.setRestCallResponse(restCallResponse);
 				return;
 			} else if (requestBody.startsWith(ApiTestConstants.PROPERTY_DOWNLOAD_REQ_PREFIX)) {
-				restCallResponse =  downloadFile(url, requestBody, headers);
+				restCallResponse =  downloadFile(url, apiCallInfo.getMethod(), requestBody, headers);
 				apiCallInfo.setRestCallResponse(restCallResponse);
 				return;
 			}
@@ -360,16 +352,14 @@ public class RestNetworkUtil {
  	 * @return
  	 * @throws Exception
  	 */
-	public RestCallResponse downloadFile(String url, String request, Map<String, String> headers) throws Exception {
+	public RestCallResponse downloadFile(String url, String httpMethod, String request, Map<String, String> headers) throws Exception {
 		
 		File resourcesDirectory = new File("src/test/resources");
 		String downLoadDirPath = resourcesDirectory.getAbsolutePath();
 		downLoadDirPath = downLoadDirPath + File.separator + "downloads";
 		
-		FileDownloader fileDownloader = new FileDownloader(url, downLoadDirPath, headers);
+		FileDownloader fileDownloader = new FileDownloader(url, httpMethod, downLoadDirPath, headers);
 		RestCallResponse restCallResponse = fileDownloader.finish();
-		
-		assertTrue("Could not download the file from server ! ", restCallResponse.getResponse() != null);
 		return restCallResponse;
 	}
 	
@@ -377,7 +367,7 @@ public class RestNetworkUtil {
 	/**
 	 * Reads an InputStream and converts it to a String.
 	 */
-	private String readStream(InputStream stream) {
+	public static String readStream(InputStream stream) {
 		BufferedReader rd = new BufferedReader(new InputStreamReader(stream));
 		String line;
 		StringBuffer response = new StringBuffer();
@@ -445,5 +435,17 @@ public class RestNetworkUtil {
 			return this.headers;
 		}
 	}
+	
+	
+//	public static void main(String[] args) throws Exception {
+//		RestNetworkUtil networkUtil = new RestNetworkUtil();
+//		String url = "https://raw.githubusercontent.com/srinivas2207/RestApiTest/master/docs/RestApiTestingFramework.docx";
+//		
+//		ApiCallInfo apiCallInfo = new ApiTestInfo(). new ApiCallInfo();
+//		apiCallInfo.setUrl(url);
+//		apiCallInfo.setRequest("DOWNLOAD_REQUEST");
+//		apiCallInfo.setHeaders("[\"Content-Type=application/x-www-form-urlencoded\", \"test=testt\"]");
+//		networkUtil.sendRequest(apiCallInfo);
+//	}
 	
 }

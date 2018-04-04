@@ -317,10 +317,12 @@ public class ApiTestInfo {
 						String str = varList.getString(i);
 						String variableName = varList.getString(i).substring(0, str.indexOf("="));
 						String variableValue = varList.getString(i).substring(str.indexOf("=") + 1, str.length());
-						VariableInfo varInfo = new VariableInfo();
-						varInfo.setVariableName(variableName);
-						varInfo.setVariableValue(variableValue);
-						variableList.add(varInfo);
+						if (variableName != null && variableName.trim().length() > 0) {
+							VariableInfo varInfo = new VariableInfo();
+							varInfo.setVariableName(variableName);
+							varInfo.setVariableValue(variableValue);
+							variableList.add(varInfo);
+						}
 					}
 				}
 			}
@@ -422,7 +424,11 @@ public class ApiTestInfo {
 						if (headers == null) {
 							headers = new HashMap<>();
 						}
-						headers.put(headerKey, headerValue);
+						
+						if (headerKey != null && headerKey.trim().length() > 0 && headerValue != null
+								&& headerValue.trim().length() > 0) {
+							headers.put(headerKey.trim(), headerValue.trim());
+						}
 					}
 				}
 			}
@@ -470,6 +476,9 @@ public class ApiTestInfo {
 		public void setVariableName(String variableName)
 		{
 			this.variableName = variableName;
+			if (this.variableName != null) {
+				this.variableName = this.variableName.trim();
+			}
 		}
 		
 		/**
@@ -483,6 +492,9 @@ public class ApiTestInfo {
 		public void setVariableValue(String variableValue)
 		{
 			this.variableValue = variableValue;
+			if (this.variableValue != null) {
+				this.variableValue = this.variableValue.trim();
+			}
 		}
 	}
 	
